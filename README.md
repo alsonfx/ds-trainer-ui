@@ -5,6 +5,18 @@ Practice data scientist technical assessments — fully offline.
 ---
 
 ## Quick start
+You can either use UV or pip to set up the project for both the CLI and WebApp.
+
+For UV use the following:
+```bash
+# 1. Sync the project using UV. This also creates a virtual environment.
+uv sync
+
+# 2. Run the CLI or WebApp
+ds-trainer train
+# OR
+uv run python web/main.py
+```
 
 ```bash
 # 1. Create and activate a virtual environment
