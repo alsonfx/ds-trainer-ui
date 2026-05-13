@@ -37,7 +37,7 @@ class EvaluateRequest(BaseModel):
     user_answer: str
 
 class AddQuestionRequest(BaseModel):
-    id: str
+    id: str | None = None
     domain: str
     difficulty: str
     exercise_type: str
@@ -146,8 +146,8 @@ def evaluate(req: EvaluateRequest):
 
 @app.post("/api/test_question")
 def test_question(req: AddQuestionRequest):
-    if not req.id or not req.prompt:
-        return {"success": False, "message": "ID and Prompt are required."}
+    if not req.prompt:
+        return {"success": False, "message": "Prompt is required."}
     
     if req.exercise_type == ExerciseType.MULTIPLE_CHOICE:
         if not req.choices or req.answer_index is None:
@@ -189,6 +189,35 @@ def add_question(req: AddQuestionRequest):
     try:
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
+        
+        if not req.id:
+            domain_prefixes = {
+                "sql": "sql",
+                "python": "py",
+                "statistics": "stat",
+                "ml": "ml",
+                "algorithms": "alg",
+                "case_studies": "case",
+                "probability": "prob"
+            }
+            diff_prefixes = {
+                "easy": "e",
+                "medium": "m",
+                "hard": "h"
+            }
+            d_pref = domain_prefixes.get(req.domain, "q")
+            df_pref = diff_prefixes.get(req.difficulty, "x")
+            prefix = f"{d_pref}_{df_pref}_"
+            
+            c.execute("SELECT id FROM questions WHERE id LIKE ?", (prefix + "%",))
+            existing_ids = [row[0] for row in c.fetchall()]
+            max_serial = 0
+            for eid in existing_ids:
+                parts = eid.split('_')
+                if len(parts) == 3 and parts[2].isdigit():
+                    max_serial = max(max_serial, int(parts[2]))
+            req.id = f"{prefix}{max_serial + 1:03d}"
+            
         c.execute('''
             INSERT INTO questions VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?

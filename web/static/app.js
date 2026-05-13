@@ -461,7 +461,6 @@ function renderDynamicFields() {
 
 function getFormData() {
     const data = {
-        id: document.getElementById('cq-id').value,
         domain: cqDomain.value,
         difficulty: cqDifficulty.value,
         exercise_type: cqType.value,
