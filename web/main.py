@@ -36,6 +36,26 @@ class EvaluateRequest(BaseModel):
     question_id: str
     user_answer: str
 
+class AddQuestionRequest(BaseModel):
+    id: str
+    domain: str
+    difficulty: str
+    exercise_type: str
+    prompt: str
+    explanation: str = ""
+    hints: list[str] = []
+    tags: list[str] = []
+    choices: list[str] | None = None
+    answer_index: int | None = None
+    code_template: str | None = None
+    test_cases: list[dict] | None = None
+    model_answer: str | None = None
+    schema_ddl: str | None = None
+    seed_data: str | None = None
+    expected_query: str | None = None
+    project_spec: str | None = None
+    dataset_generator: str | None = None
+
 @app.get("/api/config")
 def get_config():
     domains = list(set(q.domain.value for q in QUESTIONS.values()))
@@ -120,6 +140,67 @@ def evaluate(req: EvaluateRequest):
         "model_answer": model_ans,
         "explanation": q.explanation
     }
+
+@app.post("/api/test_question")
+def test_question(req: AddQuestionRequest):
+    if not req.id or not req.prompt:
+        return {"success": False, "message": "ID and Prompt are required."}
+    
+    if req.exercise_type == ExerciseType.MULTIPLE_CHOICE:
+        if not req.choices or req.answer_index is None:
+            return {"success": False, "message": "Choices and Answer Index required."}
+        if req.answer_index < 0 or req.answer_index >= len(req.choices):
+            return {"success": False, "message": "Answer Index out of bounds."}
+        return {"success": True, "message": "Valid multiple choice question."}
+        
+    elif req.exercise_type == ExerciseType.FILL_IN_CODE:
+        if not req.model_answer:
+            return {"success": False, "message": "Model answer is required."}
+        if req.test_cases:
+            correct, message = eval_code(req.model_answer, req.test_cases, inject_pandas=(req.domain == "python"))
+            return {"success": correct, "message": message}
+        return {"success": True, "message": "Valid code question (no test cases provided)."}
+        
+    elif req.exercise_type == ExerciseType.SQL_CHALLENGE:
+        if not req.schema_ddl or not req.expected_query:
+            return {"success": False, "message": "Schema and Expected Query required."}
+        correct, message = eval_sql(req.expected_query, req.expected_query, req.schema_ddl, req.seed_data or "")
+        return {"success": correct, "message": f"Query executed successfully. {message}"}
+        
+    elif req.exercise_type == ExerciseType.EXPLAIN_CONCEPT:
+        if not req.model_answer:
+            return {"success": False, "message": "Model answer is required."}
+        return {"success": True, "message": "Valid concept question."}
+        
+    elif req.exercise_type == ExerciseType.TAKE_HOME:
+        if not req.project_spec or not req.dataset_generator:
+            return {"success": False, "message": "Project spec and dataset generator required."}
+        return {"success": True, "message": "Valid take-home question."}
+    
+    return {"success": False, "message": "Unknown exercise type."}
+
+@app.post("/api/add_question")
+def add_question(req: AddQuestionRequest):
+    import sqlite3
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ds_trainer", "questions.db")
+    try:
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO questions VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+        ''', (
+            req.id, req.domain, req.difficulty, req.exercise_type, req.prompt, req.explanation,
+            json.dumps(req.hints), json.dumps(req.tags), json.dumps(req.choices) if req.choices else None,
+            req.answer_index, req.code_template, json.dumps(req.test_cases) if req.test_cases else None,
+            req.model_answer, req.schema_ddl, req.seed_data, req.expected_query, req.project_spec, req.dataset_generator
+        ))
+        conn.commit()
+        conn.close()
+        return {"success": True, "message": "Question added to database!"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

@@ -29,6 +29,10 @@
     
     <div class="app-container">
         <header class="app-header">
+            <div class="header-actions">
+                <button id="nav-add-question-btn" class="btn secondary-btn small-btn">Add Question</button>
+                <button id="nav-home-btn" class="btn secondary-btn small-btn hidden">Back to Training</button>
+            </div>
             <h1><span class="gradient-text">DS</span> Trainer</h1>
             <p class="subtitle">Master Data Science Technical Interviews</p>
         </header>
@@ -132,6 +136,66 @@
                 
                 <div class="summary-actions">
                     <button id="restart-btn" class="btn primary-btn">Train Again</button>
+                </div>
+            </div>
+
+            <!-- Create Question View -->
+            <div id="create-view" class="view glass-panel">
+                <h2>Add New Question</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cq-id">Question ID</label>
+                        <input type="text" id="cq-id" placeholder="e.g. sql_e_001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cq-domain">Domain</label>
+                        <select id="cq-domain"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cq-difficulty">Difficulty</label>
+                        <select id="cq-difficulty"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cq-type">Exercise Type</label>
+                        <select id="cq-type"></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cq-prompt">Prompt (Markdown)</label>
+                    <textarea id="cq-prompt" placeholder="Write your question here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cq-explanation">Explanation (Markdown)</label>
+                    <textarea id="cq-explanation" placeholder="Provide an explanation for the answer..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="cq-hints">Hints (Comma Separated)</label>
+                    <input type="text" id="cq-hints" placeholder="Hint 1, Hint 2, ...">
+                </div>
+
+                <div class="form-group">
+                    <label for="cq-tags">Tags (Comma Separated)</label>
+                    <input type="text" id="cq-tags" placeholder="tag1, tag2, ...">
+                </div>
+
+                <!-- Dynamic Type Specific Fields -->
+                <div id="dynamic-fields-container">
+                    <!-- Injected by JS based on Exercise Type -->
+                </div>
+
+                <div class="actions-area mt-4">
+                    <button id="test-q-btn" class="btn secondary-btn">Test Question</button>
+                    <button id="add-q-btn" class="btn primary-btn" disabled>Add to Database</button>
+                </div>
+                
+                <div id="test-result" class="eval-result hidden mt-4">
+                    <div class="result-header">
+                        <h3 id="test-result-title">Test Result</h3>
+                    </div>
+                    <div id="test-result-message" class="result-message"></div>
                 </div>
             </div>
         </main>

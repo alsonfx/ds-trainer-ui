@@ -20,8 +20,22 @@ marked.setOptions({
 const views = {
     setup: document.getElementById('setup-view'),
     training: document.getElementById('training-view'),
-    summary: document.getElementById('summary-view')
+    summary: document.getElementById('summary-view'),
+    create: document.getElementById('create-view')
 };
+
+// Nav Elements
+const navAddQuestionBtn = document.getElementById('nav-add-question-btn');
+const navHomeBtn = document.getElementById('nav-home-btn');
+
+// Create View Elements
+const cqDomain = document.getElementById('cq-domain');
+const cqDifficulty = document.getElementById('cq-difficulty');
+const cqType = document.getElementById('cq-type');
+const dynFieldsContainer = document.getElementById('dynamic-fields-container');
+const testQBtn = document.getElementById('test-q-btn');
+const addQBtn = document.getElementById('add-q-btn');
+const testResult = document.getElementById('test-result');
 
 // Setup Form Elements
 const domainSelect = document.getElementById('domain-select');
@@ -64,6 +78,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     nextBtn.addEventListener('click', nextQuestion);
     document.getElementById('restart-btn').addEventListener('click', () => switchView('setup'));
     showHintBtn.addEventListener('click', showNextHint);
+    
+    // Create view setup
+    navAddQuestionBtn.addEventListener('click', () => {
+        switchView('create');
+        navAddQuestionBtn.classList.add('hidden');
+        navHomeBtn.classList.remove('hidden');
+    });
+    navHomeBtn.addEventListener('click', () => {
+        switchView('setup');
+        navHomeBtn.classList.add('hidden');
+        navAddQuestionBtn.classList.remove('hidden');
+    });
+    cqType.addEventListener('change', renderDynamicFields);
+    testQBtn.addEventListener('click', testQuestion);
+    addQBtn.addEventListener('click', addQuestion);
 });
 
 function switchView(viewName) {
@@ -79,6 +108,12 @@ async function fetchConfig() {
         populateSelect(domainSelect, data.domains);
         populateSelect(difficultySelect, data.difficulties);
         populateSelect(typeSelect, data.types);
+        
+        populateSelect(cqDomain, data.domains.filter(d => d !== 'all'));
+        populateSelect(cqDifficulty, data.difficulties.filter(d => d !== 'all'));
+        populateSelect(cqType, data.types.filter(d => d !== 'all'));
+        renderDynamicFields();
+
     } catch (err) {
         console.error("Failed to fetch config", err);
         domainSelect.innerHTML = '<option value="all">all</option>';
@@ -354,4 +389,172 @@ function showSummary() {
     document.querySelector('.score-circle').style.setProperty('--percentage', `${percentage}%`);
     
     switchView('summary');
+}
+
+// --- Create Question Logic ---
+
+function renderDynamicFields() {
+    const type = cqType.value;
+    dynFieldsContainer.innerHTML = '';
+    
+    if (type === 'multiple_choice') {
+        dynFieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Choices (JSON array or comma separated)</label>
+                <textarea id="cq-choices" placeholder='["Choice A", "Choice B"]'></textarea>
+            </div>
+            <div class="form-group">
+                <label>Answer Index (0-based)</label>
+                <input type="number" id="cq-answer-index" min="0">
+            </div>
+        `;
+    } else if (type === 'fill_in_code') {
+        dynFieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Code Template</label>
+                <textarea id="cq-template" placeholder="def my_func():..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Model Answer</label>
+                <textarea id="cq-model-answer" placeholder="def my_func(): return True"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Test Cases (JSON array of dicts)</label>
+                <textarea id="cq-test-cases" placeholder='[{"function": "my_func", "args": [], "expected": true}]'></textarea>
+            </div>
+        `;
+    } else if (type === 'sql_challenge') {
+        dynFieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Schema DDL</label>
+                <textarea id="cq-schema" placeholder="CREATE TABLE..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Seed Data</label>
+                <textarea id="cq-seed" placeholder="INSERT INTO..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Expected Query</label>
+                <textarea id="cq-expected" placeholder="SELECT * FROM..."></textarea>
+            </div>
+        `;
+    } else if (type === 'explain_concept') {
+        dynFieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Model Answer</label>
+                <textarea id="cq-model-answer" placeholder="Explanation..."></textarea>
+            </div>
+        `;
+    } else if (type === 'take_home') {
+        dynFieldsContainer.innerHTML = `
+            <div class="form-group">
+                <label>Project Spec</label>
+                <textarea id="cq-project-spec" placeholder="Task description..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Dataset Generator Key</label>
+                <input type="text" id="cq-dataset-gen">
+            </div>
+        `;
+    }
+}
+
+function getFormData() {
+    const data = {
+        id: document.getElementById('cq-id').value,
+        domain: cqDomain.value,
+        difficulty: cqDifficulty.value,
+        exercise_type: cqType.value,
+        prompt: document.getElementById('cq-prompt').value,
+        explanation: document.getElementById('cq-explanation').value,
+        hints: document.getElementById('cq-hints').value.split(',').map(s => s.trim()).filter(s => s),
+        tags: document.getElementById('cq-tags').value.split(',').map(s => s.trim()).filter(s => s)
+    };
+    
+    if (data.exercise_type === 'multiple_choice') {
+        try {
+            data.choices = JSON.parse(document.getElementById('cq-choices').value);
+        } catch {
+            data.choices = document.getElementById('cq-choices').value.split(',').map(s => s.trim());
+        }
+        data.answer_index = parseInt(document.getElementById('cq-answer-index').value);
+    } else if (data.exercise_type === 'fill_in_code') {
+        data.code_template = document.getElementById('cq-template').value;
+        data.model_answer = document.getElementById('cq-model-answer').value;
+        try {
+            data.test_cases = JSON.parse(document.getElementById('cq-test-cases').value || "[]");
+        } catch {
+            data.test_cases = [];
+        }
+    } else if (data.exercise_type === 'sql_challenge') {
+        data.schema_ddl = document.getElementById('cq-schema').value;
+        data.seed_data = document.getElementById('cq-seed').value;
+        data.expected_query = document.getElementById('cq-expected').value;
+    } else if (data.exercise_type === 'explain_concept') {
+        data.model_answer = document.getElementById('cq-model-answer').value;
+    } else if (data.exercise_type === 'take_home') {
+        data.project_spec = document.getElementById('cq-project-spec').value;
+        data.dataset_generator = document.getElementById('cq-dataset-gen').value;
+    }
+    return data;
+}
+
+async function testQuestion() {
+    const data = getFormData();
+    testQBtn.disabled = true;
+    testQBtn.textContent = 'Testing...';
+    
+    try {
+        const res = await fetch(`${API_BASE}/test_question`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        testResult.classList.remove('hidden', 'success', 'error');
+        testResult.classList.add(result.success ? 'success' : 'error');
+        document.getElementById('test-result-title').textContent = result.success ? 'Test Passed!' : 'Test Failed';
+        document.getElementById('test-result-message').textContent = result.message;
+        
+        addQBtn.disabled = !result.success;
+    } catch (e) {
+        testResult.classList.remove('hidden', 'success');
+        testResult.classList.add('error');
+        document.getElementById('test-result-title').textContent = 'Error';
+        document.getElementById('test-result-message').textContent = 'Failed to connect to server.';
+        addQBtn.disabled = true;
+    }
+    
+    testQBtn.disabled = false;
+    testQBtn.textContent = 'Test Question';
+}
+
+async function addQuestion() {
+    const data = getFormData();
+    addQBtn.disabled = true;
+    addQBtn.textContent = 'Adding...';
+    
+    try {
+        const res = await fetch(`${API_BASE}/add_question`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+            alert('Question successfully added!');
+            switchView('setup');
+            navHomeBtn.classList.add('hidden');
+            navAddQuestionBtn.classList.remove('hidden');
+        } else {
+            alert('Failed to add question: ' + result.message);
+        }
+    } catch (e) {
+        alert('Failed to connect to server.');
+    }
+    
+    addQBtn.disabled = false;
+    addQBtn.textContent = 'Add to Database';
 }
