@@ -29,11 +29,6 @@
     
     <div class="app-container">
         <header class="app-header">
-            <div class="header-actions">
-                <button id="nav-add-question-btn" class="btn secondary-btn small-btn">Add Question</button>
-                <button id="nav-home-btn" class="btn secondary-btn small-btn hidden">Back to Training</button>
-                <button id="nav-reset-db-btn" class="btn danger-btn small-btn">Reset Database</button>
-            </div>
             <h1><span class="gradient-text">DS</span> Trainer</h1>
             <p class="subtitle">Master Data Science Technical Interviews</p>
         </header>
@@ -72,6 +67,18 @@
                 <button id="start-btn" class="btn primary-btn">
                     Start Training <span class="btn-icon">→</span>
                 </button>
+
+                <div class="management-section">
+                    <h3 class="management-title">Database Management</h3>
+                    <div class="management-buttons">
+                        <button id="nav-add-question-btn" class="btn secondary-btn">
+                            Add Question
+                        </button>
+                        <button id="nav-reset-db-btn" class="btn danger-btn">
+                            Reset Database
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Training View -->
@@ -186,6 +193,7 @@
                 <div class="actions-area mt-4">
                     <button id="test-q-btn" class="btn secondary-btn">Test Question</button>
                     <button id="add-q-btn" class="btn primary-btn" disabled>Add to Database</button>
+                    <button id="nav-home-btn" class="btn secondary-btn">Cancel</button>
                 </div>
                 
                 <div id="test-result" class="eval-result hidden mt-4">

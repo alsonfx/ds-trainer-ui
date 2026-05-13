@@ -98,14 +98,6 @@ body {
     position: relative;
 }
 
-.header-actions {
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
-    display: flex;
-    gap: 0.5rem;
-}
-
 .app-header {
     text-align: center;
     margin-bottom: 1rem;
@@ -235,6 +227,28 @@ textarea {
 
 .secondary-btn:hover {
     background: rgba(255, 255, 255, 0.15);
+}
+
+/* Management Section */
+.management-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.management-title {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.management-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
 }
 
 .danger-btn {

@@ -81,16 +81,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     showHintBtn.addEventListener('click', showNextHint);
     
     // Create view setup
-    navAddQuestionBtn.addEventListener('click', () => {
-        switchView('create');
-        navAddQuestionBtn.classList.add('hidden');
-        navHomeBtn.classList.remove('hidden');
-    });
-    navHomeBtn.addEventListener('click', () => {
-        switchView('setup');
-        navHomeBtn.classList.add('hidden');
-        navAddQuestionBtn.classList.remove('hidden');
-    });
+    navAddQuestionBtn.addEventListener('click', () => switchView('create'));
+    navHomeBtn.addEventListener('click', () => switchView('setup'));
     
     navResetDbBtn.addEventListener('click', async () => {
         if (confirm("Are you sure you want to reset the database? This will delete ALL custom questions and restore the core defaults. This cannot be undone!")) {
@@ -568,8 +560,6 @@ async function addQuestion() {
         if (result.success) {
             alert('Question successfully added!');
             switchView('setup');
-            navHomeBtn.classList.add('hidden');
-            navAddQuestionBtn.classList.remove('hidden');
         } else {
             alert('Failed to add question: ' + result.message);
         }
